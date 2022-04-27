@@ -1,0 +1,78 @@
+#This file instructs how to setup a basic Hadoop environemnt 
+#and run sample Hadoop and Hive jobs for
+#Data-ntensive Systems book and course
+
+#I assume you have Docker installed and Hortonworks HDP 2.6.5 scripts downloaded.
+#This tutorial was written and tested using Docker 3.1.0 on Mac OS X 11.1,
+#Docker was setup up with 4GB of RAM and 2GB of swap.
+#You might need minor adjustments for Linux systems
+#and major adjustments for Windows.
+
+#Hortonworks Sandbox setup
+cd HDP_2
+sh docker-deploy-hdp265.sh
+#this process will take a long time
+#afterword HDP will be installed and running
+#to stop HDP
+docker stop sandbox-hdp
+docker stop sandbox-proxy
+
+#to start HDP
+docker start sandbox-hdp
+docker start sandbox-proxy
+
+#log in to Sandbox VM from local machine
+#edit /Users/your-user-name/.ssh/known_hosts if necessary
+ssh root@127.0.0.1 -p 2222
+
+#install pip and mrjob on Sandbox VM
+yum -y install python-pip
+pip install mrjob==0.5.10
+#it might be necessary to upgrade pip with pip install --upgrade pip
+
+logout
+
+#For the following parts all Hadoop services need to be running, that can take even 5-10 minutes from the moment you start HDP
+#Accessing Hortonworks Sandbox and copying data
+#copy materials from local machine to the VM
+scp -P 2222 -r dis_materials root@127.0.0.1:~
+
+#copy data from Sandbox VM to HDFS
+ssh root@127.0.0.1 -p 2222
+hadoop fs -mkdir /dis_materials
+hadoop fs -put dis_materials/*.txt dis_materials/*.csv /dis_materials
+
+#Analyzing unstructured data with Hadoop Streaming
+cd dis_materials
+hadoop jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar \
+    -mapper email_count_mapper.py \
+    -reducer email_count_reducer.py \
+    -input /dis_materials/hadoop_1m.txt \
+    -output /dis_materials/output1 \
+    -file email_count_mapper.py \
+    -file email_count_reducer.py
+
+hadoop fs -text /dis_materials/output1/part* | less
+
+#Analysing unstructured data with MRJob
+python count_sum.py --hadoop-streaming-jar /usr/hdp/current/hadoop-mapreduce-client/hadoop-streaming.jar -r hadoop hdfs:///dis_materials/hadoop_1m.txt --output-dir hdfs:///dis_materials/output2 --no-output
+
+hadoop fs -text /dis_materials/output2/part* | less
+
+#Testing code without any Hadoop installation
+cat hadoop_1m.txt | ./email_count_mapper.py | sort -k1,1 | ./email_count_reducer.py
+python count_sum.py -r inline hadoop_1m.txt
+
+#Analyzing structured data with Hive
+#start hive from Sandbox or cluster
+hive
+
+#create table and import data
+CREATE EXTERNAL TABLE hadoopmail (list STRING, date1 STRING, date2 STRING, email STRING, topic STRING)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n'
+STORED AS TEXTFILE;
+
+LOAD DATA INPATH '/dis_materials/hadoop.csv' OVERWRITE INTO TABLE hadoopmail;
+
+#run a simple data query
+SELECT substr(email, locate('@', email)+1), count(substr(email,locate('@', email)+1)) FROM hadoopmail GROUP BY substr(email,locate('@', email)+1);
