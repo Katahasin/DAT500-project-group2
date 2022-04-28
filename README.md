@@ -16,10 +16,10 @@
 
 ### run-all.sh explanation
 
-./payload-packetization.sh
-./pre-processing.sh
-./labelling.sh
-./LSH.sh
+./payload-packetization.sh;
+./pre-processing.sh;
+./labelling.sh;
+./LSH.sh;
 
 1. Breaks up large warc files into smaller distributable equal size packets
 
