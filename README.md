@@ -29,6 +29,9 @@
 
 4. Runs locality sensitive hashing on small batches to locate similarity accross sites
 
+### To install modules on all nodes
+1. run setup-folder-permissions.sh
+
 ## To-do to customize project
 
 1. get-data.sh: Pick the warc file slices from the month/year you want and paste the file name inside the script. This will download all the data you want to your local main node (namenode). They will be placed inside the crawl-data folder. The files can be found here: https://commoncrawl.org/the-data/get-started/
