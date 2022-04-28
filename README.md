@@ -29,7 +29,7 @@
 
 4. Runs locality sensitive hashing on small batches to locate similarity accross sites
 
-### To install modules on all nodes
+### To install all modules on all nodes
 1. run setup-folder-permissions.sh
 
 ## To-do to customize project
